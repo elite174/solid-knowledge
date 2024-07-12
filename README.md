@@ -52,3 +52,50 @@ render(
 ```
 
 Possible explanation is [here](https://discord.com/channels/722131463138705510/722131463889223772/1261153998950371419)
+
+## Solid-js router
+
+### What is `createAsync`?
+
+`createAsync` is just a wrapper (for now, in Solid 2.0 there'll be a change for that) over `createResource` ([source code](https://github.com/solidjs/solid-router/blob/main/src/data/createAsync.ts)). So when you call accessor from `createAsync` you **will trigger `Suspense`**:
+
+```tsx
+const data = createAsync(() => fetch(...));
+
+return <Suspense fallback="loading...">
+   {/** This will trigger Suspense all the time when createAsync updates */
+   {data()}
+</Suspense>
+```
+
+### How to avoid triggering `Suspense` with `createAsync`?
+
+For `createResource` we have `.latest` property which doesn't trigger `Suspense` on refetching. However there's no such thing for `createAsync`, what should we do in this case?
+
+There's a small [hack](https://discord.com/channels/722131463138705510/1260246424508170321):
+
+```tsx
+function latest<T>(signal: Accessor<T | undefined>) {
+  const [latest, setLatest] = createSignal(createRoot(signal));
+
+  createRoot(() => {
+    createMemo(() => setLatest(signal));
+  });
+
+  if (latest() === undefined) return signal();
+  return latest();
+}
+```
+
+The point is that we're moving suspense tracking to another root, thus avoiding triggering suspense for the current root.
+
+And you can use it inside JSX:
+
+```tsx
+const data = createAsync(() => fetch(...));
+
+return <Suspense fallback="loading...">
+   {/** This won't trigger Suspense when createAsync updates */
+   {latest(data)}
+</Suspense>
+```
