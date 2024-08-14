@@ -70,6 +70,8 @@ return <Suspense fallback="loading...">
 
 ### How to avoid triggering `Suspense` with `createAsync`?
 
+UPDATE for router `^0.14.2`: `createAsync` preserves `.latest` field (as for resources), so feel free to use this.
+
 For `createResource` we have `.latest` property which doesn't trigger `Suspense` on refetching. However there's no such thing for `createAsync`, what should we do in this case?
 
 There's a small [hack](https://discord.com/channels/722131463138705510/1260246424508170321):
